@@ -3561,13 +3561,17 @@ abstract class CommonObject
 		} elseif ($this->table_element == 'ecm_files') {
 			$fieldusermod = "fk_user_m";
 		} else {
-			$fieldusermod = "fk_user_modif";
+			if($this->table_element == 'customstock'){
+				$fieldusermod = 'fk_user_modify';
+			}else{
+				$fieldusermod = "fk_user_modif";
+			}
 		}
 		$sql = "UPDATE ".$this->db->prefix().$this->table_element;
 		$sql .= " SET note".$newsuffix." = ".(!empty($note) ? ("'".$this->db->escape($note)."'") : "NULL");
 		$sql .= ", ".$fieldusermod." = ".((int) $user->id);
 		$sql .= " WHERE rowid = ".((int) $this->id);
-
+		
 		dol_syslog(get_class($this)."::update_note", LOG_DEBUG);
 		if ($this->db->query($sql)) {
 			if ($suffix == '_public') {
@@ -3606,6 +3610,7 @@ abstract class CommonObject
 					return -1;
 				}
 			}
+			$this->db->commit();
 			return 1;
 		} else {
 			$this->error = $this->db->lasterror();

@@ -97,11 +97,10 @@ if($action == "add"){
     $result = $customStock->create($user);
 
     if ($result > 0) {
-        setEventMessage("Custom stock successfully created with ID: $customStock->id",'mesgs');
+        setEventMessage("Custom stock successfully created with ID: ".$customStock->id);
 		header("Location:".$SERVER["PHP_SELF"]."?id=".$customStock->id);
     } else {
         setEventMessage("Error creating custom stock: " . $customStock->error, 'errors');
-		header("Location:".$SERVER["PHP_SELF"]);
     }
 }  
 
@@ -111,9 +110,9 @@ if($action == "add"){
 //if (!isModEnabled('customstock')) {
 //	accessforbidden('Module not enabled');
 //}
-//if (! $user->hasRight('customstock', 'myobject', 'read')) {
-//	accessforbidden();
-//}
+if (true) {
+	accessforbidden();
+}
 //restrictedArea($user, 'customstock', 0, 'customstock_myobject', 'myobject', '', 'rowid');
 //if (empty($user->admin)) {
 //	accessforbidden('Must be admin');
