@@ -10,6 +10,7 @@ CREATE TABLE llx_customstock (
     fk_user_create INT,
     fk_user_modify INT,
     fk_user_valid INT,
+    date_valid DATETIME,
     date_creation DATETIME,
     fk_statut INT,
     tms TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,

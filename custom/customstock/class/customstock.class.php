@@ -115,10 +115,115 @@ class Customstock extends CommonObject {
 
     }
 
-    public function fetch($id, $ref = ""){
 
+    public function validate($user)
+	{
+		require_once DOL_DOCUMENT_ROOT.'/core/lib/files.lib.php';
+		global $conf;
+
+		if($this->status == self::STATUS_VALIDATED) return 0;
+
+		$now = dol_now();
+
+		$error = 0;
+		dol_syslog(get_class($this).'::validate user='.$user->id);
+
+
+		$this->db->begin();
+
+		if (!$error && (preg_match('/^[\(]?PROV/i', $this->ref) || empty($this->ref))) {
+			$num = $this->getNextNumRef();
+		}
+
+
+		$this->newref = dol_sanitizeFileName($num);
+
+		if ($num) {
+			$sql = "UPDATE ".MAIN_DB_PREFIX."customstock SET ref = '".$this->db->escape($num)."', fk_statut = 1";
+			//$sql.= ", fk_user_valid = ".$user->id.", date_valid = '".$this->db->idate($now)."'";
+			$sql .= " WHERE rowid = ".((int) $this->id)." AND fk_statut = 0";
+         
+			dol_syslog(get_class($this)."::validate", LOG_DEBUG);
+			$resql = $this->db->query($sql);
+            $this->db->commit();
+			if (!$resql) {
+				dol_print_error($this->db);
+				$error++;
+				$this->error = $this->db->lasterror();
+			}
+
+
+			// if (!$error) {
+
+			// 	$this->oldref = $this->ref;
+
+			// 	// Rename directory if dir was a temporary ref
+			// 	if (preg_match('/^[\(]?PROV/i', $this->ref)) {
+			// 		// Now we rename also files into index
+			// 		$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filename = CONCAT('".$this->db->escape($this->newref)."', SUBSTR(filename, ".(strlen($this->ref) + 1).")), filepath = 'contract/".$this->db->escape($this->newref)."'";
+			// 		$sql .= " WHERE filename LIKE '".$this->db->escape($this->ref)."%' AND filepath = 'contract/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+			// 		$resql = $this->db->query($sql);
+			// 		if (!$resql) {
+			// 			$error++;
+			// 			$this->error = $this->db->lasterror();
+			// 		}
+			// 		$sql = 'UPDATE '.MAIN_DB_PREFIX."ecm_files set filepath = 'contract/".$this->db->escape($this->newref)."'";
+			// 		$sql .= " WHERE filepath = 'contract/".$this->db->escape($this->ref)."' and entity = ".$conf->entity;
+			// 		$resql = $this->db->query($sql);
+			// 		if (!$resql) {
+			// 			$error++;
+			// 			$this->error = $this->db->lasterror();
+			// 		}
+
+			// 		// We rename directory ($this->ref = old ref, $num = new ref) in order not to lose the attachments
+			// 		$oldref = dol_sanitizeFileName($this->ref);
+			// 		$newref = dol_sanitizeFileName($num);
+			// 		$dirsource = $conf->contract->dir_output.'/'.$oldref;
+			// 		$dirdest = $conf->contract->dir_output.'/'.$newref;
+			// 		if (!$error && file_exists($dirsource)) {
+			// 			dol_syslog(get_class($this)."::validate rename dir ".$dirsource." into ".$dirdest);
+
+			// 			if (@rename($dirsource, $dirdest)) {
+			// 				dol_syslog("Rename ok");
+			// 				// Rename docs starting with $oldref with $newref
+			// 				$listoffiles = dol_dir_list($conf->contract->dir_output.'/'.$newref, 'files', 1, '^'.preg_quote($oldref, '/'));
+			// 				foreach ($listoffiles as $fileentry) {
+			// 					$dirsource = $fileentry['name'];
+			// 					$dirdest = preg_replace('/^'.preg_quote($oldref, '/').'/', $newref, $dirsource);
+			// 					$dirsource = $fileentry['path'].'/'.$dirsource;
+			// 					$dirdest = $fileentry['path'].'/'.$dirdest;
+			// 					@rename($dirsource, $dirdest);
+			// 				}
+			// 			}
+			// 		}
+			// 	}
+			// }
+
+			// Set new ref and define current statut
+			if (!$error) {
+
+
+				$this->ref = $num;
+				$this->status = self::STATUS_VALIDATED;
+				$this->status = self::STATUS_VALIDATED;
+				$this->date_validation = $now;
+			}
+		} else {
+			$error++;
+		}
+
+		if (!$error) {
+			$this->db->commit();
+			return 1;
+		} else {
+			$this->db->rollback();
+			return -1;
+		}
+	}
+
+    public function fetch($id=null, $ref = "") {
         $this->db->begin();
-
+    
         $sql = "SELECT ";
         $sql .= "d.rowid, ";
         $sql .= "d.ref, ";
@@ -134,10 +239,12 @@ class Customstock extends CommonObject {
         $sql .= "d.fk_statut, ";
         $sql .= "d.note_private, ";
         $sql .= "d.note_public ";    
-
-        $sql .= " from llx_customstock as d";
-        $sql .= " where d.rowid = ".intval($id);
-
+    
+        $sql .= " FROM llx_customstock AS d";
+        
+        if ($id !== null) {
+            $sql .= " WHERE d.rowid = " . intval($id);
+        }
 
         $resql = $this->db->query( $sql);
         if ($resql) {
@@ -227,4 +334,54 @@ class Customstock extends CommonObject {
 	}
 
 
+
+    public function getNextNumRef()
+	{
+		global $langs, $conf;
+		$langs->load("customstock@customstock");
+
+		if (!getDolGlobalString('CUSTOMSTOCK_MYOBJECT_ADDON')) {
+			$conf->global->CUSTOMSTOCK_MYOBJECT_ADDON = 'mod_customstock_standard';
+		}
+
+		if (getDolGlobalString('CUSTOMSTOCK_MYOBJECT_ADDON')) {
+			$mybool = false;
+
+			$file = getDolGlobalString('CUSTOMSTOCK_MYOBJECT_ADDON').".php";
+			$classname = getDolGlobalString('CUSTOMSTOCK_MYOBJECT_ADDON');
+
+			// Include file with class
+			$dirmodels = array_merge(array('/'), (array) $conf->modules_parts['models']);
+			foreach ($dirmodels as $reldir) {
+				$dir = dol_buildpath($reldir."custom/customstock/core/modules/");
+
+				// Load file with numbering class (if found)
+				$mybool |= @include_once $dir.$file;
+			}
+
+			if ($mybool === false) {
+				dol_print_error('', "Failed to include file ".$file);
+				return '';
+			}
+
+			if (class_exists($classname)) {
+				$obj = new $classname();
+				$numref = $obj->getNextValue($this);
+
+				if ($numref != '' && $numref != '-1') {
+					return $numref;
+				} else {
+					$this->error = $obj->error;
+					//dol_print_error($this->db,get_class($this)."::getNextNumRef ".$obj->error);
+					return "";
+				}
+			} else {
+				print $langs->trans("Error")." ".$langs->trans("ClassNotFound").' '.$classname;
+				return "";
+			}
+		} else {
+			print $langs->trans("ErrorNumberingModuleNotSetup", $this->element);
+			return "";
+		}
+	}
 }

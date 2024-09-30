@@ -261,6 +261,38 @@ class modCustomStock extends DolibarrModules
 		// Permissions provided by this module
 		$this->rights = array();
 		$r = 0;
+
+		$r++;
+		$this->rights[$r][0] = $this->numero . $r;  // Permission id (must not be already used)
+		$this->rights[$r][1] = 'Lire les demandes de stock';  // Permission label
+		$this->rights[$r][2] = 'r';  // Permission code
+		$this->rights[$r][3] = '0';  // Permission group
+		$this->rights[$r][4] = 'lire';  // Permission type
+
+		$r++;
+		$this->rights[$r][0] = $this->numero . $r;  // Permission id (must not be already used)
+		$this->rights[$r][1] = 'Créer modifier les demandes de stock';  // Permission label
+		$this->rights[$r][2] = 'w';  // Permission code
+		$this->rights[$r][3] = '0';  // Permission group
+		$this->rights[$r][4] = 'creer';  // Permission type
+
+		$r++;
+		$this->rights[$r][0] = $this->numero . $r;  // Permission id (must not be already used)
+		$this->rights[$r][1] = 'Valider les demandes de stock';  // Permission label
+		$this->rights[$r][2] = 'v';  // Permission code
+		$this->rights[$r][3] = '0';  // Permission group
+		$this->rights[$r][4] = 'validate';  // Permission type
+
+		$r++;
+		$this->rights[$r][0] = $this->numero . $r;  // Permission id (must not be already used)
+		$this->rights[$r][1] = 'Supprimer les demandes de stock';  // Permission label
+		$this->rights[$r][2] = 'd';  // Permission code
+		$this->rights[$r][3] = '0';  // Permission group
+		$this->rights[$r][4] = 'delete';  // Permission type
+
+		// Add here entries to declare new permissions
+
+
 		// Add here entries to declare new permissions
 		/* BEGIN MODULEBUILDER PERMISSIONS */
 		/*
